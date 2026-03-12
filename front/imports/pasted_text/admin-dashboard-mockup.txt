@@ -1,0 +1,105 @@
+voila a quoi doit ressembler ma maquette :
+
+PAGE D’ACCUEIL – DASHBOARD ADMIN MNS (Figma)
+
+Type de page : Dashboard (utilisateur admin / vie scolaire)
+Objectif : Vue globale rapide des absences, retards et dossiers
+
+ 1. Frame principale
+Frame desktop
+Largeur : 1440 px
+Hauteur : Auto / min 900 px
+Background : #F5F5F5
+
+2. Sidebar gauche (navigation)
+Dimensions:
+Largeur : 260 px
+Hauteur : 100 %
+
+Couleur : #1A1F3D
+Contenu (de haut en bas)
+Logo MNS
+Position : top center
+Taille : 120 × auto
+Menu (vertical)
+Dashboard (actif)
+Stagiaires
+Formations
+Dossiers
+Absences / Retards
+Notifications
+Style menu
+Texte : blanc
+Élément actif :
+Fond : #FF6600
+Texte : blanc
+Border radius : 8px
+Espacement items : 12px
+
+3. Header supérieur (zone centrale)
+Hauteur : 80 px
+Fond : blanc
+Ombre légère
+Contenu
+À gauche :
+Titre : “Dashboard”
+Couleur : #1A1F3D
+Taille : 24px – SemiBold
+À droite :
+Icône notification 
+Avatar utilisateur (cercle 40px)
+
+4. Section statistiques (cards)
+Grid 4 colonnes
+Card type (réutilisable)
+Largeur : 100 %
+Hauteur : 120 px
+Fond : blanc
+Radius : 12 px
+Ombre légère
+Padding : 16 px
+Cards à afficher
+Absences aujourd’hui
+Chiffre gros (32px)
+Label gris
+Icône ⛔
+Accent orange #FF6600
+Retards aujourd’hui
+Accent orange
+Dossiers incomplets
+Accent rouge #EF4444
+Justificatifs en attente
+Accent bleu foncé
+
+📋 5. Section “Dernières activités”
+👉 Deux colonnes
+Colonne gauche : Dernières absences
+Card blanche
+Titre : “Dernières absences”
+Liste :
+Nom stagiaire
+Formation
+Date
+Statut (badge)
+Badge :
+Justifiée → vert
+En attente → orange
+Non justifiée → rouge
+
+Colonne droite : Derniers documents déposés
+Même structure
+Infos :
+Nom du document
+Stagiaire
+Date
+Bouton Voir / Valider
+Bouton :
+Fond orange
+Texte blanc
+Radius 8px
+
+6. Règles UX importantes
+🧡 Orange = action
+🟦 Bleu = structure
+⬜ Blanc = lisibilité
+“L’utilisateur doit comprendre l’état de la situation en moins de 5 secondes.”

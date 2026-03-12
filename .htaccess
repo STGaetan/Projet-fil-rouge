@@ -1,0 +1,5 @@
+RewriteEngine On
+
+# Redirige toutes les requêtes /api/* vers back/index.php
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^(.*)$ /back/index.php [QSA,L]

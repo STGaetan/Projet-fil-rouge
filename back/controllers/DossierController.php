@@ -8,10 +8,12 @@ class DossierController
     {
         $pdo = getDbConnection();
         $stmt = $pdo->query('
-            SELECT d.*, s.nom AS stagiaire_nom
-            FROM dossiers d
-            LEFT JOIN stagiaires s ON d.stagiaire_id = s.id
-            ORDER BY d.created_at DESC
+            SELECT d.*, s.nom AS stagiaire_nom, s.prenom AS stagiaire_prenom,
+                   f.nom_formation
+            FROM dossier d
+            LEFT JOIN stagiaire s ON d.id_stagiaire = s.id_stagiaire
+            LEFT JOIN formation f ON d.id_formation = f.id_formation
+            ORDER BY d.id_dossier DESC
         ');
         jsonResponse($stmt->fetchAll());
     }
@@ -20,10 +22,12 @@ class DossierController
     {
         $pdo = getDbConnection();
         $stmt = $pdo->prepare('
-            SELECT d.*, s.nom AS stagiaire_nom
-            FROM dossiers d
-            LEFT JOIN stagiaires s ON d.stagiaire_id = s.id
-            WHERE d.id = :id
+            SELECT d.*, s.nom AS stagiaire_nom, s.prenom AS stagiaire_prenom,
+                   f.nom_formation
+            FROM dossier d
+            LEFT JOIN stagiaire s ON d.id_stagiaire = s.id_stagiaire
+            LEFT JOIN formation f ON d.id_formation = f.id_formation
+            WHERE d.id_dossier = :id
         ');
         $stmt->execute(['id' => $params['id']]);
         $dossier = $stmt->fetch();
@@ -41,20 +45,26 @@ class DossierController
         $pdo = getDbConnection();
 
         $stmt = $pdo->prepare('
-            INSERT INTO dossiers (stagiaire_id, titre, type, statut)
-            VALUES (:stagiaire_id, :titre, :type, :statut)
+            INSERT INTO dossier (id_stagiaire, id_formation, statut, id_user)
+            VALUES (:id_stagiaire, :id_formation, :statut, :id_user)
         ');
 
         $stmt->execute([
-            'stagiaire_id' => $body['stagiaire_id'] ?? 0,
-            'titre' => $body['titre'] ?? '',
-            'type' => $body['type'] ?? 'Administratif',
-            'statut' => $body['statut'] ?? 'En attente',
+            'id_stagiaire' => $body['id_stagiaire'],
+            'id_formation' => $body['id_formation'],
+            'statut'       => $body['statut'] ?? 'En attente',
+            'id_user'      => $body['id_user'] ?? null,
         ]);
 
         $id = $pdo->lastInsertId();
-
-        $stmt = $pdo->prepare('SELECT * FROM dossiers WHERE id = :id');
+        $stmt = $pdo->prepare('
+            SELECT d.*, s.nom AS stagiaire_nom, s.prenom AS stagiaire_prenom,
+                   f.nom_formation
+            FROM dossier d
+            LEFT JOIN stagiaire s ON d.id_stagiaire = s.id_stagiaire
+            LEFT JOIN formation f ON d.id_formation = f.id_formation
+            WHERE d.id_dossier = :id
+        ');
         $stmt->execute(['id' => $id]);
 
         jsonResponse($stmt->fetch(), 201);
@@ -65,7 +75,7 @@ class DossierController
         $body = getBody();
         $pdo = getDbConnection();
 
-        $stmt = $pdo->prepare('SELECT * FROM dossiers WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM dossier WHERE id_dossier = :id');
         $stmt->execute(['id' => $params['id']]);
         $dossier = $stmt->fetch();
 
@@ -74,20 +84,28 @@ class DossierController
         }
 
         $stmt = $pdo->prepare('
-            UPDATE dossiers
-            SET stagiaire_id = :stagiaire_id, titre = :titre, type = :type, statut = :statut
-            WHERE id = :id
+            UPDATE dossier
+            SET id_stagiaire = :id_stagiaire, id_formation = :id_formation,
+                statut = :statut, id_user = :id_user
+            WHERE id_dossier = :id
         ');
 
         $stmt->execute([
-            'stagiaire_id' => $body['stagiaire_id'] ?? $dossier['stagiaire_id'],
-            'titre' => $body['titre'] ?? $dossier['titre'],
-            'type' => $body['type'] ?? $dossier['type'],
-            'statut' => $body['statut'] ?? $dossier['statut'],
-            'id' => $params['id'],
+            'id_stagiaire' => $body['id_stagiaire'] ?? $dossier['id_stagiaire'],
+            'id_formation' => $body['id_formation'] ?? $dossier['id_formation'],
+            'statut'       => $body['statut'] ?? $dossier['statut'],
+            'id_user'      => array_key_exists('id_user', $body) ? $body['id_user'] : $dossier['id_user'],
+            'id'           => $params['id'],
         ]);
 
-        $stmt = $pdo->prepare('SELECT * FROM dossiers WHERE id = :id');
+        $stmt = $pdo->prepare('
+            SELECT d.*, s.nom AS stagiaire_nom, s.prenom AS stagiaire_prenom,
+                   f.nom_formation
+            FROM dossier d
+            LEFT JOIN stagiaire s ON d.id_stagiaire = s.id_stagiaire
+            LEFT JOIN formation f ON d.id_formation = f.id_formation
+            WHERE d.id_dossier = :id
+        ');
         $stmt->execute(['id' => $params['id']]);
 
         jsonResponse($stmt->fetch());
@@ -97,14 +115,14 @@ class DossierController
     {
         $pdo = getDbConnection();
 
-        $stmt = $pdo->prepare('SELECT id FROM dossiers WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT id_dossier FROM dossier WHERE id_dossier = :id');
         $stmt->execute(['id' => $params['id']]);
 
         if (!$stmt->fetch()) {
             jsonResponse(['error' => 'Dossier non trouvé'], 404);
         }
 
-        $stmt = $pdo->prepare('DELETE FROM dossiers WHERE id = :id');
+        $stmt = $pdo->prepare('DELETE FROM dossier WHERE id_dossier = :id');
         $stmt->execute(['id' => $params['id']]);
 
         jsonResponse(['message' => 'Dossier supprimé']);

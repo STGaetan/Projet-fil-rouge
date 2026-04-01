@@ -8,10 +8,9 @@ class StagiaireController
     {
         $pdo = getDbConnection();
         $stmt = $pdo->query('
-            SELECT s.*, f.nom AS formation_nom
-            FROM stagiaires s
-            LEFT JOIN formations f ON s.formation_id = f.id
-            ORDER BY s.created_at DESC
+            SELECT s.*
+            FROM stagiaire s
+            ORDER BY s.id_stagiaire DESC
         ');
         jsonResponse($stmt->fetchAll());
     }
@@ -19,12 +18,7 @@ class StagiaireController
     public function show(array $params): void
     {
         $pdo = getDbConnection();
-        $stmt = $pdo->prepare('
-            SELECT s.*, f.nom AS formation_nom
-            FROM stagiaires s
-            LEFT JOIN formations f ON s.formation_id = f.id
-            WHERE s.id = :id
-        ');
+        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $params['id']]);
         $stagiaire = $stmt->fetch();
 
@@ -41,24 +35,25 @@ class StagiaireController
         $pdo = getDbConnection();
 
         $stmt = $pdo->prepare('
-            INSERT INTO stagiaires (nom, email, formation_id, statut, progression)
-            VALUES (:nom, :email, :formation_id, :statut, :progression)
+            INSERT INTO stagiaire (nom, prenom, email, telephone, mot_de_passe)
+            VALUES (:nom, :prenom, :email, :telephone, :mot_de_passe)
         ');
 
         $stmt->execute([
-            'nom' => $body['nom'] ?? '',
-            'email' => $body['email'] ?? '',
-            'formation_id' => !empty($body['formation_id']) ? $body['formation_id'] : null,
-            'statut' => $body['statut'] ?? 'En attente',
-            'progression' => $body['progression'] ?? 0,
+            'nom'           => $body['nom'] ?? '',
+            'prenom'        => $body['prenom'] ?? '',
+            'email'         => $body['email'] ?? '',
+            'telephone'     => $body['telephone'] ?? '',
+            'mot_de_passe'  => password_hash($body['mot_de_passe'] ?? 'password', PASSWORD_BCRYPT),
         ]);
 
         $id = $pdo->lastInsertId();
-
-        $stmt = $pdo->prepare('SELECT * FROM stagiaires WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $id]);
+        $result = $stmt->fetch();
+        unset($result['mot_de_passe']);
 
-        jsonResponse($stmt->fetch(), 201);
+        jsonResponse($result, 201);
     }
 
     public function update(array $params): void
@@ -66,7 +61,7 @@ class StagiaireController
         $body = getBody();
         $pdo = getDbConnection();
 
-        $stmt = $pdo->prepare('SELECT * FROM stagiaires WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $params['id']]);
         $stagiaire = $stmt->fetch();
 
@@ -75,39 +70,39 @@ class StagiaireController
         }
 
         $stmt = $pdo->prepare('
-            UPDATE stagiaires
-            SET nom = :nom, email = :email, formation_id = :formation_id,
-                statut = :statut, progression = :progression
-            WHERE id = :id
+            UPDATE stagiaire
+            SET nom = :nom, prenom = :prenom, email = :email, telephone = :telephone
+            WHERE id_stagiaire = :id
         ');
 
         $stmt->execute([
-            'nom' => $body['nom'] ?? $stagiaire['nom'],
-            'email' => $body['email'] ?? $stagiaire['email'],
-            'formation_id' => array_key_exists('formation_id', $body) ? ($body['formation_id'] ?: null) : $stagiaire['formation_id'],
-            'statut' => $body['statut'] ?? $stagiaire['statut'],
-            'progression' => $body['progression'] ?? $stagiaire['progression'],
-            'id' => $params['id'],
+            'nom'       => $body['nom'] ?? $stagiaire['nom'],
+            'prenom'    => $body['prenom'] ?? $stagiaire['prenom'],
+            'email'     => $body['email'] ?? $stagiaire['email'],
+            'telephone' => $body['telephone'] ?? $stagiaire['telephone'],
+            'id'        => $params['id'],
         ]);
 
-        $stmt = $pdo->prepare('SELECT * FROM stagiaires WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $params['id']]);
+        $result = $stmt->fetch();
+        unset($result['mot_de_passe']);
 
-        jsonResponse($stmt->fetch());
+        jsonResponse($result);
     }
 
     public function destroy(array $params): void
     {
         $pdo = getDbConnection();
 
-        $stmt = $pdo->prepare('SELECT id FROM stagiaires WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT id_stagiaire FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $params['id']]);
 
         if (!$stmt->fetch()) {
             jsonResponse(['error' => 'Stagiaire non trouvé'], 404);
         }
 
-        $stmt = $pdo->prepare('DELETE FROM stagiaires WHERE id = :id');
+        $stmt = $pdo->prepare('DELETE FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $params['id']]);
 
         jsonResponse(['message' => 'Stagiaire supprimé']);

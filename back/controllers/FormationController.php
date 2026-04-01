@@ -7,14 +7,14 @@ class FormationController
     public function index(array $params): void
     {
         $pdo = getDbConnection();
-        $stmt = $pdo->query('SELECT * FROM formations ORDER BY created_at DESC');
+        $stmt = $pdo->query('SELECT * FROM formation ORDER BY id_formation DESC');
         jsonResponse($stmt->fetchAll());
     }
 
     public function show(array $params): void
     {
         $pdo = getDbConnection();
-        $stmt = $pdo->prepare('SELECT * FROM formations WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM formation WHERE id_formation = :id');
         $stmt->execute(['id' => $params['id']]);
         $formation = $stmt->fetch();
 
@@ -25,28 +25,41 @@ class FormationController
         jsonResponse($formation);
     }
 
+    /**
+     * Retourne les stagiaires inscrits dans cette formation (via leurs dossiers).
+     */
+    public function stagiaires(array $params): void
+    {
+        $pdo = getDbConnection();
+        $stmt = $pdo->prepare('
+            SELECT DISTINCT s.id_stagiaire, s.nom, s.prenom, s.email, s.telephone
+            FROM stagiaire s
+            INNER JOIN dossier d ON s.id_stagiaire = d.id_stagiaire
+            WHERE d.id_formation = :id
+            ORDER BY s.nom, s.prenom
+        ');
+        $stmt->execute(['id' => $params['id']]);
+        jsonResponse($stmt->fetchAll());
+    }
+
     public function store(array $params): void
     {
         $body = getBody();
         $pdo = getDbConnection();
 
         $stmt = $pdo->prepare('
-            INSERT INTO formations (nom, description, duree, statut, places_total, places_prises)
-            VALUES (:nom, :description, :duree, :statut, :places_total, :places_prises)
+            INSERT INTO formation (nom_formation, description, duree)
+            VALUES (:nom_formation, :description, :duree)
         ');
 
         $stmt->execute([
-            'nom' => $body['nom'] ?? '',
-            'description' => $body['description'] ?? '',
-            'duree' => $body['duree'] ?? '',
-            'statut' => $body['statut'] ?? 'Active',
-            'places_total' => $body['places_total'] ?? 20,
-            'places_prises' => $body['places_prises'] ?? 0,
+            'nom_formation' => $body['nom_formation'] ?? '',
+            'description'   => $body['description'] ?? '',
+            'duree'         => $body['duree'] ?? '',
         ]);
 
         $id = $pdo->lastInsertId();
-
-        $stmt = $pdo->prepare('SELECT * FROM formations WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM formation WHERE id_formation = :id');
         $stmt->execute(['id' => $id]);
 
         jsonResponse($stmt->fetch(), 201);
@@ -57,7 +70,7 @@ class FormationController
         $body = getBody();
         $pdo = getDbConnection();
 
-        $stmt = $pdo->prepare('SELECT * FROM formations WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM formation WHERE id_formation = :id');
         $stmt->execute(['id' => $params['id']]);
         $formation = $stmt->fetch();
 
@@ -66,23 +79,19 @@ class FormationController
         }
 
         $stmt = $pdo->prepare('
-            UPDATE formations
-            SET nom = :nom, description = :description, duree = :duree,
-                statut = :statut, places_total = :places_total, places_prises = :places_prises
-            WHERE id = :id
+            UPDATE formation
+            SET nom_formation = :nom_formation, description = :description, duree = :duree
+            WHERE id_formation = :id
         ');
 
         $stmt->execute([
-            'nom' => $body['nom'] ?? $formation['nom'],
-            'description' => $body['description'] ?? $formation['description'],
-            'duree' => $body['duree'] ?? $formation['duree'],
-            'statut' => $body['statut'] ?? $formation['statut'],
-            'places_total' => $body['places_total'] ?? $formation['places_total'],
-            'places_prises' => $body['places_prises'] ?? $formation['places_prises'],
-            'id' => $params['id'],
+            'nom_formation' => $body['nom_formation'] ?? $formation['nom_formation'],
+            'description'   => $body['description'] ?? $formation['description'],
+            'duree'         => $body['duree'] ?? $formation['duree'],
+            'id'            => $params['id'],
         ]);
 
-        $stmt = $pdo->prepare('SELECT * FROM formations WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT * FROM formation WHERE id_formation = :id');
         $stmt->execute(['id' => $params['id']]);
 
         jsonResponse($stmt->fetch());
@@ -92,14 +101,14 @@ class FormationController
     {
         $pdo = getDbConnection();
 
-        $stmt = $pdo->prepare('SELECT id FROM formations WHERE id = :id');
+        $stmt = $pdo->prepare('SELECT id_formation FROM formation WHERE id_formation = :id');
         $stmt->execute(['id' => $params['id']]);
 
         if (!$stmt->fetch()) {
             jsonResponse(['error' => 'Formation non trouvée'], 404);
         }
 
-        $stmt = $pdo->prepare('DELETE FROM formations WHERE id = :id');
+        $stmt = $pdo->prepare('DELETE FROM formation WHERE id_formation = :id');
         $stmt->execute(['id' => $params['id']]);
 
         jsonResponse(['message' => 'Formation supprimée']);

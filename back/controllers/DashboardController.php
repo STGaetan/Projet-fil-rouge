@@ -8,22 +8,24 @@ class DashboardController
     {
         $pdo = getDbConnection();
 
-        $stagiaires = $pdo->query('SELECT COUNT(*) as total FROM stagiaires')->fetch()['total'];
-        $formations = $pdo->query('SELECT COUNT(*) as total FROM formations')->fetch()['total'];
-        $dossiers = $pdo->query('SELECT COUNT(*) as total FROM dossiers')->fetch()['total'];
-        $absences = $pdo->query('SELECT COUNT(*) as total FROM absences')->fetch()['total'];
+        $stagiaires = $pdo->query('SELECT COUNT(*) as total FROM stagiaire')->fetch()['total'];
+        $formations = $pdo->query('SELECT COUNT(*) as total FROM formation')->fetch()['total'];
+        $dossiers = $pdo->query('SELECT COUNT(*) as total FROM dossier')->fetch()['total'];
+        $absences = $pdo->query('SELECT COUNT(*) as total FROM absence')->fetch()['total'];
+        $retards = $pdo->query('SELECT COUNT(*) as total FROM retard')->fetch()['total'];
 
-        $formationsActives = $pdo->query("SELECT COUNT(*) as total FROM formations WHERE statut = 'Active'")->fetch()['total'];
-        $dossiersEnAttente = $pdo->query("SELECT COUNT(*) as total FROM dossiers WHERE statut = 'En attente'")->fetch()['total'];
-        $absencesNonJust = $pdo->query("SELECT COUNT(*) as total FROM absences WHERE statut = 'Non justifiée'")->fetch()['total'];
+        $dossiersEnAttente = $pdo->query("SELECT COUNT(*) as total FROM dossier WHERE statut = 'En attente'")->fetch()['total'];
+        $dossiersIncomplets = $pdo->query("SELECT COUNT(*) as total FROM dossier WHERE statut = 'Incomplet'")->fetch()['total'];
+        $absencesNonJust = $pdo->query("SELECT COUNT(*) as total FROM absence WHERE justificatif_obligatoire = 1 AND justif_absence IS NULL")->fetch()['total'];
 
         jsonResponse([
-            'stagiaires' => (int) $stagiaires,
-            'formations' => (int) $formations,
-            'formations_actives' => (int) $formationsActives,
-            'dossiers' => (int) $dossiers,
+            'stagiaires'          => (int) $stagiaires,
+            'formations'          => (int) $formations,
+            'dossiers'            => (int) $dossiers,
             'dossiers_en_attente' => (int) $dossiersEnAttente,
-            'absences' => (int) $absences,
+            'dossiers_incomplets' => (int) $dossiersIncomplets,
+            'absences'            => (int) $absences,
+            'retards'             => (int) $retards,
             'absences_non_justifiees' => (int) $absencesNonJust,
         ]);
     }

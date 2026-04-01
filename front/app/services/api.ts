@@ -1,16 +1,21 @@
-/**
- * === SERVICE API CENTRALISÉ ===
- *
- * Gère les appels vers le backend PHP avec :
- *   - Token JWT dans chaque requête (header Authorization)
- *   - Déconnexion automatique si token expiré (401)
- *   - Validation des réponses
- */
-
 const API_BASE_URL = "http://localhost:8080/api";
+
+/** Traduit un code HTTP en message lisible par défaut. */
+function httpStatusMessage(status: number): string {
+  switch (status) {
+    case 400: return "Requête invalide.";
+    case 403: return "Accès refusé.";
+    case 404: return "Ressource introuvable.";
+    case 409: return "Cet enregistrement existe déjà (ex: email déjà utilisé).";
+    case 422: return "Données invalides.";
+    case 500: return "Erreur serveur. Veuillez réessayer.";
+    default:  return `Erreur ${status}.`;
+  }
+}
 
 /**
  * Effectue un appel API sécurisé vers le backend.
+ * Extrait automatiquement le message d'erreur retourné par le serveur.
  */
 export async function fetchApi<T = unknown>(
   endpoint: string,
@@ -29,8 +34,8 @@ export async function fetchApi<T = unknown>(
     headers,
   });
 
-  // Token expiré ou invalide → déconnexion automatique
-  if (response.status === 401) {
+  // Token expiré → déconnexion automatique (sauf sur la route de login)
+  if (response.status === 401 && !endpoint.startsWith("/auth/")) {
     localStorage.removeItem("mns_token");
     localStorage.removeItem("mns_user");
     localStorage.removeItem("mns_auth");
@@ -39,8 +44,20 @@ export async function fetchApi<T = unknown>(
   }
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Erreur API ${response.status}: ${errorBody}`);
+    // On tente d'extraire le message d'erreur précis retourné par le backend
+    let message = httpStatusMessage(response.status);
+    try {
+      const errorData = await response.json();
+      if (Array.isArray(errorData.details) && errorData.details.length > 0) {
+        // Erreurs de validation : affiche le premier détail
+        message = errorData.details[0];
+      } else if (typeof errorData.error === "string") {
+        message = errorData.error;
+      }
+    } catch {
+      // Le body n'était pas du JSON valide → on garde le message par défaut
+    }
+    throw new Error(message);
   }
 
   return response.json();

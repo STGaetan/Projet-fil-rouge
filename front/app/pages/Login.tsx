@@ -30,8 +30,8 @@ export function Login() {
       login(response.user, response.token);
       toast.success('Connexion réussie !');
       navigate('/');
-    } catch (err: any) {
-      toast.error(err.message?.includes('401') ? 'Identifiants incorrects.' : 'Erreur de connexion au serveur.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur de connexion au serveur.");
     } finally {
       setIsLoading(false);
     }

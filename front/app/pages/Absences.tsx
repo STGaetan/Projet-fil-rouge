@@ -101,8 +101,8 @@ export function Absences() {
       setRetards(ret);
       setStagiaires(stag);
       setFormations(form);
-    } catch {
-      toast.error("Erreur de chargement des données.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur de chargement des données.");
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,10 @@ export function Absences() {
           setFormStagiaire("");
         }
       })
-      .catch(() => setFormStagiaires([]));
+      .catch((err) => {
+        setFormStagiaires([]);
+        toast.error(err instanceof Error ? err.message : "Impossible de charger les stagiaires de cette formation.");
+      });
   }, [formFormation]);
 
   const unifiedData: UnifiedRow[] = [
@@ -212,10 +215,10 @@ export function Absences() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formStagiaire || !formFormation) {
-      toast.error("Veuillez sélectionner un stagiaire et une formation.");
-      return;
-    }
+    if (!formFormation)              { toast.error("Veuillez sélectionner une formation."); return; }
+    if (!formStagiaire)              { toast.error("Veuillez sélectionner un stagiaire."); return; }
+    if (!formDate)                   { toast.error("La date est obligatoire."); return; }
+    if (formType === "Retard" && !formTemps.trim()) { toast.error("La durée du retard est obligatoire."); return; }
     setSaving(true);
 
     try {
@@ -265,8 +268,8 @@ export function Absences() {
 
       setIsFormOpen(false);
       loadData();
-    } catch {
-      toast.error("Erreur lors de l'enregistrement.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'enregistrement.");
     } finally {
       setSaving(false);
     }
@@ -287,8 +290,8 @@ export function Absences() {
       setIsDeleteOpen(false);
       setDeletingItem(null);
       loadData();
-    } catch {
-      toast.error("Erreur lors de la suppression.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la suppression.");
     } finally {
       setSaving(false);
     }
@@ -305,8 +308,8 @@ export function Absences() {
       });
       toast.success(`Absence de ${item.stagiaire} marquée comme justifiée.`);
       loadData();
-    } catch {
-      toast.error("Erreur lors de la justification.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la justification.");
     }
   };
 
@@ -418,8 +421,78 @@ export function Absences() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* ===== MOBILE : Vue cards ===== */}
+      <div className="sm:hidden space-y-3">
+        {filteredData.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-14 text-center">
+            <Users size={32} className="mx-auto text-gray-200 mb-2" />
+            <p className="text-sm text-gray-400">Aucun événement trouvé.</p>
+          </div>
+        ) : (
+          filteredData.map((item) => (
+            <div key={`${item.type}-${item.id}`} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              {/* Ligne du haut : type + statut + actions */}
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-bold ${
+                      item.type === "Absence"
+                        ? "bg-red-50 text-red-600"
+                        : "bg-orange-50 text-[#FF6600]"
+                    }`}
+                  >
+                    {item.type}
+                  </span>
+                  <StatusBadge status={item.statut} />
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  {item.type === "Absence" && item.statut === "Non justifiée" && (
+                    <button
+                      onClick={() => handleJustify(item)}
+                      className="text-xs font-semibold px-2.5 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded-md transition-colors"
+                    >
+                      Justifier
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openEditForm(item)}
+                    className="p-1.5 text-gray-400 hover:text-[#FF6600] hover:bg-orange-50 rounded-md transition-colors"
+                  >
+                    <Edit3 size={15} />
+                  </button>
+                  <button
+                    onClick={() => { setDeletingItem(item); setIsDeleteOpen(true); }}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Infos stagiaire */}
+              <p className="font-bold text-[#1A1F3D] text-sm">{item.stagiaire}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{item.formation}</p>
+
+              {/* Date + détail */}
+              <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                <span className="font-medium text-gray-700">{formatDate(item.date)}</span>
+                {item.detail !== "-" && (
+                  <span className="truncate max-w-[180px] ml-2">{item.detail}</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+
+        {filteredData.length > 0 && (
+          <p className="text-xs text-gray-400 text-center py-1">
+            {filteredData.length} résultat{filteredData.length > 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+
+      {/* ===== DESKTOP : Table ===== */}
+      <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto min-h-[400px]">
           <table className="w-full text-left min-w-[900px]">
             <thead className="bg-gray-50/80">
@@ -450,37 +523,28 @@ export function Absences() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="font-bold text-[#1A1F3D] text-sm">
-                      {item.stagiaire}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {item.formation}
-                    </p>
+                    <p className="font-bold text-[#1A1F3D] text-sm">{item.stagiaire}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{item.formation}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-[#1A1F3D]">
-                      {formatDate(item.date)}
-                    </p>
+                    <p className="text-sm font-medium text-[#1A1F3D]">{formatDate(item.date)}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-600 truncate max-w-[200px]">
-                      {item.detail}
-                    </p>
+                    <p className="text-sm text-gray-600 truncate max-w-[200px]">{item.detail}</p>
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={item.statut} />
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {item.type === "Absence" &&
-                        item.statut === "Non justifiée" && (
-                          <button
-                            onClick={() => handleJustify(item)}
-                            className="text-xs font-semibold px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-md transition-colors"
-                          >
-                            Justifier
-                          </button>
-                        )}
+                      {item.type === "Absence" && item.statut === "Non justifiée" && (
+                        <button
+                          onClick={() => handleJustify(item)}
+                          className="text-xs font-semibold px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-md transition-colors"
+                        >
+                          Justifier
+                        </button>
+                      )}
                       <button
                         onClick={() => openEditForm(item)}
                         className="p-1.5 text-gray-400 hover:text-[#FF6600] hover:bg-orange-50 rounded-md transition-colors"
@@ -489,10 +553,7 @@ export function Absences() {
                         <Edit3 size={16} />
                       </button>
                       <button
-                        onClick={() => {
-                          setDeletingItem(item);
-                          setIsDeleteOpen(true);
-                        }}
+                        onClick={() => { setDeletingItem(item); setIsDeleteOpen(true); }}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                         title="Supprimer"
                       >
@@ -504,10 +565,7 @@ export function Absences() {
               ))}
               {filteredData.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <Users size={32} className="text-gray-300" />
                       <p>Aucun événement trouvé.</p>
@@ -519,9 +577,7 @@ export function Absences() {
           </table>
         </div>
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-sm text-gray-500">
-          <span>
-            {filteredData.length} résultat{filteredData.length > 1 ? "s" : ""}
-          </span>
+          <span>{filteredData.length} résultat{filteredData.length > 1 ? "s" : ""}</span>
         </div>
       </div>
 

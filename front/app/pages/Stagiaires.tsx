@@ -91,8 +91,8 @@ export function Stagiaires() {
       ]);
       setStagiaires(stagData);
       setFormations(formData);
-    } catch {
-      toast.error("Erreur lors du chargement des données.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors du chargement des données.");
     } finally {
       setLoading(false);
     }
@@ -151,6 +151,14 @@ export function Stagiaires() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.prenom.trim()) { toast.error("Le prénom est obligatoire."); return; }
+    if (!form.nom.trim())    { toast.error("Le nom est obligatoire."); return; }
+    if (!form.email.trim())  { toast.error("L'email est obligatoire."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error("L'adresse email n'est pas valide."); return; }
+    if (!form.telephone.trim()) { toast.error("Le téléphone est obligatoire."); return; }
+    if (!form.id_formation)     { toast.error("Veuillez sélectionner une formation."); return; }
+
     setSaving(true);
     try {
       const { id_formation, ...stagiaireData } = form;
@@ -202,8 +210,8 @@ export function Stagiaires() {
       }
       setIsFormOpen(false);
       loadData();
-    } catch {
-      toast.error("Erreur lors de l'enregistrement.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'enregistrement.");
     } finally {
       setSaving(false);
     }
@@ -220,8 +228,8 @@ export function Stagiaires() {
       setIsDeleteOpen(false);
       setDeletingItem(null);
       loadData();
-    } catch {
-      toast.error("Erreur lors de la suppression.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la suppression.");
     } finally {
       setSaving(false);
     }
@@ -411,8 +419,82 @@ export function Stagiaires() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+      {/* ===== MOBILE : Vue cards ===== */}
+      <div className="sm:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-14 text-center">
+            <Users size={36} className="mx-auto text-gray-200 mb-2" />
+            <p className="text-sm text-gray-400">Aucun stagiaire ne correspond aux critères.</p>
+          </div>
+        ) : (
+          filtered.map((s) => (
+            <div key={s.id_stagiaire} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              {/* Ligne du haut : avatar + nom + actions */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-[#FF6600]/10 text-[#FF6600] flex items-center justify-center font-bold text-sm shrink-0">
+                  {getInitials(s.nom, s.prenom)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[#1A1F3D] text-sm leading-none">{s.prenom} {s.nom}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">{s.email}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <a
+                    href={`mailto:${s.email}`}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    <Mail size={15} />
+                  </a>
+                  <button
+                    onClick={() => openEdit(s)}
+                    className="p-2 text-gray-400 hover:text-[#1A1F3D] hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Edit size={15} />
+                  </button>
+                  <button
+                    onClick={() => { setDeletingItem(s); setIsDeleteOpen(true); }}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Ligne du bas : infos */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {s.telephone && (
+                  <span className="inline-flex items-center gap-1 text-gray-500">
+                    <Phone size={11} /> {s.telephone}
+                  </span>
+                )}
+                {s.nom_formation ? (
+                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 font-medium">
+                    {s.nom_formation}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 italic">Sans formation</span>
+                )}
+                <StatusBadge status={s.dossier_statut ?? "Sans dossier"} />
+                <span className="ml-auto inline-flex items-center gap-1 text-gray-400">
+                  <Calendar size={11} /> {formatDate(s.date_inscription)}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* Compteur mobile */}
+        {filtered.length > 0 && (
+          <p className="text-xs text-gray-400 text-center py-1">
+            {filtered.length} stagiaire{filtered.length > 1 ? "s" : ""} affiché
+            {filtered.length > 1 ? "s" : ""}
+            {filtered.length < stagiaires.length && ` sur ${stagiaires.length}`}
+          </p>
+        )}
+      </div>
+
+      {/* ===== DESKTOP : Table ===== */}
+      <div className="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[900px]">
             <thead className="bg-gray-50/80">
@@ -440,9 +522,7 @@ export function Stagiaires() {
                         <p className="font-bold text-[#1A1F3D] text-sm group-hover:text-[#FF6600] transition-colors">
                           {s.prenom} {s.nom}
                         </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {s.email}
-                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">{s.email}</p>
                       </div>
                     </div>
                   </td>
@@ -453,9 +533,7 @@ export function Stagiaires() {
                         {s.telephone}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400 italic">
-                        Non renseigné
-                      </span>
+                      <span className="text-xs text-gray-400 italic">Non renseigné</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -464,9 +542,7 @@ export function Stagiaires() {
                         {s.nom_formation}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400 italic">
-                        Aucune formation
-                      </span>
+                      <span className="text-xs text-gray-400 italic">Aucune formation</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -495,10 +571,7 @@ export function Stagiaires() {
                         <Edit size={16} />
                       </button>
                       <button
-                        onClick={() => {
-                          setDeletingItem(s);
-                          setIsDeleteOpen(true);
-                        }}
+                        onClick={() => { setDeletingItem(s); setIsDeleteOpen(true); }}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Supprimer"
                       >
@@ -513,9 +586,7 @@ export function Stagiaires() {
                   <td colSpan={6} className="px-6 py-14 text-center">
                     <div className="flex flex-col items-center gap-2 text-gray-400">
                       <Users size={36} className="text-gray-200" />
-                      <p className="text-sm">
-                        Aucun stagiaire ne correspond aux critères.
-                      </p>
+                      <p className="text-sm">Aucun stagiaire ne correspond aux critères.</p>
                     </div>
                   </td>
                 </tr>
@@ -586,10 +657,10 @@ export function Stagiaires() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Téléphone{" "}
-              <span className="text-gray-400 font-normal">(optionnel)</span>
+              Téléphone
             </label>
             <input
+              required
               type="tel"
               value={form.telephone}
               onChange={(e) =>
@@ -601,17 +672,17 @@ export function Stagiaires() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Formation{" "}
-              <span className="text-gray-400 font-normal">(optionnel)</span>
+              Formation
             </label>
             <select
+              required
               value={form.id_formation}
               onChange={(e) =>
                 setForm((f) => ({ ...f, id_formation: e.target.value }))
               }
               className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#FF6600]/20 focus:border-[#FF6600] outline-none transition-all"
             >
-              <option value="">— Aucune formation —</option>
+              <option value="">— Sélectionner une formation —</option>
               {formations.map((f) => (
                 <option key={f.id_formation} value={f.id_formation}>
                   {f.nom_formation}

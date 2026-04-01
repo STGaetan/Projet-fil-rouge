@@ -344,34 +344,34 @@ export function Absences() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-red-50 text-red-500 rounded-lg">
-            <XCircle size={24} />
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white p-3 sm:p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 sm:gap-4">
+          <div className="p-2 sm:p-3 bg-red-50 text-red-500 rounded-lg shrink-0">
+            <XCircle size={20} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Absences</p>
-            <p className="text-2xl font-bold text-[#1A1F3D]">
+            <p className="text-xs text-gray-500 font-medium">Absences</p>
+            <p className="text-xl sm:text-2xl font-bold text-[#1A1F3D]">
               {stats.absences}
             </p>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-orange-50 text-[#FF6600] rounded-lg">
-            <Clock size={24} />
+        <div className="bg-white p-3 sm:p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 sm:gap-4">
+          <div className="p-2 sm:p-3 bg-orange-50 text-[#FF6600] rounded-lg shrink-0">
+            <Clock size={20} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Retards</p>
-            <p className="text-2xl font-bold text-[#1A1F3D]">{stats.retards}</p>
+            <p className="text-xs text-gray-500 font-medium">Retards</p>
+            <p className="text-xl sm:text-2xl font-bold text-[#1A1F3D]">{stats.retards}</p>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-50 text-blue-500 rounded-lg">
-            <Filter size={24} />
+        <div className="bg-white p-3 sm:p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 sm:gap-4">
+          <div className="p-2 sm:p-3 bg-blue-50 text-blue-500 rounded-lg shrink-0">
+            <Filter size={20} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Non justifiées</p>
-            <p className="text-2xl font-bold text-[#1A1F3D]">
+            <p className="text-xs text-gray-500 font-medium leading-tight">Non justif.</p>
+            <p className="text-xl sm:text-2xl font-bold text-[#1A1F3D]">
               {stats.nonJustifiees}
             </p>
           </div>

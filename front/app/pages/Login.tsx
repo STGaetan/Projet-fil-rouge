@@ -85,26 +85,20 @@ export function Login() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-[#FF6600] border-gray-300 rounded focus:ring-[#FF6600]"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
-                  Se souvenir de moi
-                </label>
-              </div>
-              <a href="#" className="text-sm font-medium text-[#FF6600] hover:text-[#e65c00]">
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => toast.info("Contactez votre administrateur pour réinitialiser votre mot de passe.")}
+                className="text-sm font-medium text-[#FF6600] hover:text-[#e65c00] transition-colors"
+              >
                 Mot de passe oublié ?
-              </a>
+              </button>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-[#1A1F3D] hover:bg-[#2a315c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1A1F3D] transition-all disabled:opacity-70 mt-6"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-[#1A1F3D] hover:bg-[#2a315c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1A1F3D] transition-all disabled:opacity-70 mt-2"
             >
               {isLoading ? (
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

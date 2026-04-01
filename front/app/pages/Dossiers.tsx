@@ -215,7 +215,7 @@ export function Dossiers() {
               </div>
 
               {/* Quick Actions Menu (Top right) */}
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => {
                     setCurrentFolder(folder);

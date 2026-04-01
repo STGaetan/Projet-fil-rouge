@@ -16,19 +16,25 @@ class AuthController
         }
 
         $pdo = getDbConnection();
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM utilisateur WHERE email = :email LIMIT 1');
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, $user['password'])) {
+        if (!$user || !password_verify($password, $user['mot_de_passe'])) {
             jsonResponse(['error' => 'Identifiants incorrects'], 401);
         }
 
-        unset($user['password']);
+        unset($user['mot_de_passe']);
 
         jsonResponse([
             'message' => 'Connexion réussie',
-            'user' => $user,
+            'user' => [
+                'id'    => $user['id_user'],
+                'nom'   => $user['nom'],
+                'prenom'=> $user['prenom'],
+                'email' => $user['email'],
+                'role'  => $user['role'],
+            ],
         ]);
     }
 }

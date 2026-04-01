@@ -1,10 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+
+export type User = {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: string;
+};
 
 type AuthContextType = {
   isAuthenticated: boolean;
-  login: (email: string) => void;
+  login: (user: User) => void;
   logout: () => void;
-  userEmail: string | null;
+  user: User | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -13,26 +21,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('mns_auth') === 'true';
   });
-  const [userEmail, setUserEmail] = useState<string | null>(() => {
-    return localStorage.getItem('mns_email');
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('mns_user');
+    return stored ? JSON.parse(stored) : null;
   });
 
-  const login = (email: string) => {
+  const login = (userData: User) => {
     setIsAuthenticated(true);
-    setUserEmail(email);
+    setUser(userData);
     localStorage.setItem('mns_auth', 'true');
-    localStorage.setItem('mns_email', email);
+    localStorage.setItem('mns_user', JSON.stringify(userData));
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    setUserEmail(null);
+    setUser(null);
     localStorage.removeItem('mns_auth');
-    localStorage.removeItem('mns_email');
+    localStorage.removeItem('mns_user');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, userEmail }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user }}>
       {children}
     </AuthContext.Provider>
   );

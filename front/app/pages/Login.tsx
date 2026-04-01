@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchApi } from '../services/api';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -11,21 +12,27 @@ export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast.error('Veuillez remplir tous les champs.');
+      return;
+    }
+
     setIsLoading(true);
-    
-    // Simulation d'un appel réseau
-    setTimeout(() => {
-      if (email && password) {
-        login(email);
-        toast.success('Connexion réussie !');
-        navigate('/');
-      } else {
-        toast.error('Veuillez remplir tous les champs.');
-        setIsLoading(false);
-      }
-    }, 800);
+    try {
+      const response = await fetchApi<{ message: string; user: { id: number; nom: string; prenom: string; email: string; role: string } }>(
+        '/auth/login',
+        { method: 'POST', body: JSON.stringify({ email, password }) }
+      );
+      login(response.user);
+      toast.success('Connexion réussie !');
+      navigate('/');
+    } catch (err: any) {
+      toast.error(err.message?.includes('401') ? 'Identifiants incorrects.' : 'Erreur de connexion au serveur.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,12 +40,13 @@ export function Login() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
         <div className="bg-[#1A1F3D] p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-[#FF6600]"></div>
-          <div className="text-4xl font-bold tracking-wider text-white mb-2 relative z-10">
-            <span className="text-[#FF6600]">M</span>NS<span className="text-xl font-normal text-gray-300 ml-2">Admin</span>
+          <div className="flex items-center justify-center gap-3 relative z-10 mb-2">
+            <img src="/logo.png" alt="MNS" className="h-12 w-auto" />
+            <span className="text-xl font-normal text-gray-300">Admin</span>
           </div>
           <p className="text-gray-400 text-sm relative z-10">Gestion Scolaire Centralisée</p>
         </div>
-        
+
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">

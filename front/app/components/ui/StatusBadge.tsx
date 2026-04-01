@@ -12,6 +12,9 @@ export function StatusBadge({ status }: { status: string }) {
     case 'Incomplet':
     case 'Refusé':
       return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 text-[#EF4444] border border-red-200"><XOctagon size={12}/> {status}</span>;
+    case 'Signalé':
+    case 'Retard':
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-orange-50 text-[#FF6600] border border-orange-200"><AlertTriangle size={12}/> {status}</span>;
     default:
       return <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">{status}</span>;
   }

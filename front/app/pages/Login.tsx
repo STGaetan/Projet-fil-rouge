@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchApi } from '../services/api';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Login() {
-  const [email, setEmail] = useState('admin@mns.fr');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +23,11 @@ export function Login() {
 
     setIsLoading(true);
     try {
-      const response = await fetchApi<{ message: string; user: { id: number; nom: string; prenom: string; email: string; role: string } }>(
+      const response = await fetchApi<{ message: string; token: string; user: { id: number; nom: string; prenom: string; email: string; role: string } }>(
         '/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) }
       );
-      login(response.user);
+      login(response.user, response.token);
       toast.success('Connexion réussie !');
       navigate('/');
     } catch (err: any) {

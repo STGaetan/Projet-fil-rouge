@@ -46,9 +46,10 @@ type FormState = {
   prenom: string;
   email: string;
   telephone: string;
+  id_formation: string;
 };
 
-const emptyForm: FormState = { nom: "", prenom: "", email: "", telephone: "" };
+const emptyForm: FormState = { nom: "", prenom: "", email: "", telephone: "", id_formation: "" };
 
 function formatDate(iso: string | null): string {
   if (!iso) return "-";
@@ -143,6 +144,7 @@ export function Stagiaires() {
       prenom: s.prenom,
       email: s.email,
       telephone: s.telephone ?? "",
+      id_formation: s.id_formation ? String(s.id_formation) : "",
     });
     setIsFormOpen(true);
   };
@@ -151,17 +153,51 @@ export function Stagiaires() {
     e.preventDefault();
     setSaving(true);
     try {
+      const { id_formation, ...stagiaireData } = form;
+
       if (editingId) {
         await fetchApi(`/stagiaires/${editingId}`, {
           method: "PUT",
-          body: JSON.stringify(form),
+          body: JSON.stringify(stagiaireData),
         });
+        // Mettre à jour la formation si elle a changé
+        const current = stagiaires.find((s) => s.id_stagiaire === editingId);
+        if (id_formation) {
+          if (current?.dossier_id) {
+            await fetchApi(`/dossiers/${current.dossier_id}`, {
+              method: "PUT",
+              body: JSON.stringify({ id_formation: Number(id_formation) }),
+            });
+          } else {
+            await fetchApi("/dossiers", {
+              method: "POST",
+              body: JSON.stringify({
+                id_stagiaire: editingId,
+                id_formation: Number(id_formation),
+                statut: "En attente",
+              }),
+            });
+          }
+        }
         toast.success("Stagiaire mis à jour.");
       } else {
-        await fetchApi("/stagiaires", {
-          method: "POST",
-          body: JSON.stringify({ ...form, mot_de_passe: "password" }),
-        });
+        const newStagiaire = await fetchApi<{ id_stagiaire: number }>(
+          "/stagiaires",
+          {
+            method: "POST",
+            body: JSON.stringify({ ...stagiaireData, mot_de_passe: "password" }),
+          }
+        );
+        if (id_formation && newStagiaire?.id_stagiaire) {
+          await fetchApi("/dossiers", {
+            method: "POST",
+            body: JSON.stringify({
+              id_stagiaire: newStagiaire.id_stagiaire,
+              id_formation: Number(id_formation),
+              statut: "En attente",
+            }),
+          });
+        }
         toast.success("Stagiaire ajouté.");
       }
       setIsFormOpen(false);
@@ -562,6 +598,26 @@ export function Stagiaires() {
               className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#FF6600]/20 focus:border-[#FF6600] outline-none transition-all"
               placeholder="06 12 34 56 78"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Formation{" "}
+              <span className="text-gray-400 font-normal">(optionnel)</span>
+            </label>
+            <select
+              value={form.id_formation}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, id_formation: e.target.value }))
+              }
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#FF6600]/20 focus:border-[#FF6600] outline-none transition-all"
+            >
+              <option value="">— Aucune formation —</option>
+              {formations.map((f) => (
+                <option key={f.id_formation} value={f.id_formation}>
+                  {f.nom_formation}
+                </option>
+              ))}
+            </select>
           </div>
           {!editingId && (
             <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/validation.php';
 
 class StagiaireController
 {
@@ -26,6 +27,10 @@ class StagiaireController
 
     public function show(array $params): void
     {
+        if (!validateId($params['id'])) {
+            jsonResponse(['error' => 'ID invalide'], 400);
+        }
+
         $pdo = getDbConnection();
         $stmt = $pdo->prepare('
             SELECT s.id_stagiaire, s.nom, s.prenom, s.email, s.telephone, s.date_inscription,
@@ -43,7 +48,7 @@ class StagiaireController
             LEFT JOIN formation f ON d.id_formation = f.id_formation
             WHERE s.id_stagiaire = :id
         ');
-        $stmt->execute(['id' => $params['id']]);
+        $stmt->execute(['id' => (int) $params['id']]);
         $stagiaire = $stmt->fetch();
 
         if (!$stagiaire) {
@@ -56,7 +61,23 @@ class StagiaireController
     public function store(array $params): void
     {
         $body = getBody();
+
+        $clean = validateBody($body, [
+            'nom'          => ['type' => 'string', 'required' => true],
+            'prenom'       => ['type' => 'string', 'required' => true],
+            'email'        => ['type' => 'email', 'required' => true],
+            'telephone'    => ['type' => 'phone', 'required' => false, 'default' => ''],
+            'mot_de_passe' => ['type' => 'string', 'required' => false, 'default' => 'password'],
+        ]);
+
         $pdo = getDbConnection();
+
+        // Vérifier unicité de l'email
+        $stmt = $pdo->prepare('SELECT id_stagiaire FROM stagiaire WHERE email = :email LIMIT 1');
+        $stmt->execute(['email' => $clean['email']]);
+        if ($stmt->fetch()) {
+            jsonResponse(['error' => 'Cet email est déjà utilisé'], 409);
+        }
 
         $stmt = $pdo->prepare('
             INSERT INTO stagiaire (nom, prenom, email, telephone, mot_de_passe)
@@ -64,33 +85,52 @@ class StagiaireController
         ');
 
         $stmt->execute([
-            'nom'           => $body['nom'] ?? '',
-            'prenom'        => $body['prenom'] ?? '',
-            'email'         => $body['email'] ?? '',
-            'telephone'     => $body['telephone'] ?? '',
-            'mot_de_passe'  => password_hash($body['mot_de_passe'] ?? 'password', PASSWORD_BCRYPT),
+            'nom'          => $clean['nom'],
+            'prenom'       => $clean['prenom'],
+            'email'        => $clean['email'],
+            'telephone'    => $clean['telephone'],
+            'mot_de_passe' => password_hash($clean['mot_de_passe'], PASSWORD_BCRYPT),
         ]);
 
         $id = $pdo->lastInsertId();
-        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
+        $stmt = $pdo->prepare('SELECT id_stagiaire, nom, prenom, email, telephone, date_inscription FROM stagiaire WHERE id_stagiaire = :id');
         $stmt->execute(['id' => $id]);
-        $result = $stmt->fetch();
-        unset($result['mot_de_passe']);
 
-        jsonResponse($result, 201);
+        jsonResponse($stmt->fetch(), 201);
     }
 
     public function update(array $params): void
     {
+        if (!validateId($params['id'])) {
+            jsonResponse(['error' => 'ID invalide'], 400);
+        }
+
         $body = getBody();
         $pdo = getDbConnection();
 
         $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
-        $stmt->execute(['id' => $params['id']]);
+        $stmt->execute(['id' => (int) $params['id']]);
         $stagiaire = $stmt->fetch();
 
         if (!$stagiaire) {
             jsonResponse(['error' => 'Stagiaire non trouvé'], 404);
+        }
+
+        $clean = validateBody($body, [
+            'nom'       => ['type' => 'string', 'required' => false],
+            'prenom'    => ['type' => 'string', 'required' => false],
+            'email'     => ['type' => 'email', 'required' => false],
+            'telephone' => ['type' => 'phone', 'required' => false],
+        ]);
+
+        // Vérifier unicité email si modifié
+        $email = $clean['email'] ?? $stagiaire['email'];
+        if ($email !== $stagiaire['email']) {
+            $check = $pdo->prepare('SELECT id_stagiaire FROM stagiaire WHERE email = :email AND id_stagiaire != :id LIMIT 1');
+            $check->execute(['email' => $email, 'id' => (int) $params['id']]);
+            if ($check->fetch()) {
+                jsonResponse(['error' => 'Cet email est déjà utilisé'], 409);
+            }
         }
 
         $stmt = $pdo->prepare('
@@ -100,34 +140,36 @@ class StagiaireController
         ');
 
         $stmt->execute([
-            'nom'       => $body['nom'] ?? $stagiaire['nom'],
-            'prenom'    => $body['prenom'] ?? $stagiaire['prenom'],
-            'email'     => $body['email'] ?? $stagiaire['email'],
-            'telephone' => $body['telephone'] ?? $stagiaire['telephone'],
-            'id'        => $params['id'],
+            'nom'       => $clean['nom'] ?? $stagiaire['nom'],
+            'prenom'    => $clean['prenom'] ?? $stagiaire['prenom'],
+            'email'     => $email,
+            'telephone' => $clean['telephone'] ?? $stagiaire['telephone'],
+            'id'        => (int) $params['id'],
         ]);
 
-        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
-        $stmt->execute(['id' => $params['id']]);
-        $result = $stmt->fetch();
-        unset($result['mot_de_passe']);
+        $stmt = $pdo->prepare('SELECT id_stagiaire, nom, prenom, email, telephone, date_inscription FROM stagiaire WHERE id_stagiaire = :id');
+        $stmt->execute(['id' => (int) $params['id']]);
 
-        jsonResponse($result);
+        jsonResponse($stmt->fetch());
     }
 
     public function destroy(array $params): void
     {
+        if (!validateId($params['id'])) {
+            jsonResponse(['error' => 'ID invalide'], 400);
+        }
+
         $pdo = getDbConnection();
 
         $stmt = $pdo->prepare('SELECT id_stagiaire FROM stagiaire WHERE id_stagiaire = :id');
-        $stmt->execute(['id' => $params['id']]);
+        $stmt->execute(['id' => (int) $params['id']]);
 
         if (!$stmt->fetch()) {
             jsonResponse(['error' => 'Stagiaire non trouvé'], 404);
         }
 
         $stmt = $pdo->prepare('DELETE FROM stagiaire WHERE id_stagiaire = :id');
-        $stmt->execute(['id' => $params['id']]);
+        $stmt->execute(['id' => (int) $params['id']]);
 
         jsonResponse(['message' => 'Stagiaire supprimé']);
     }

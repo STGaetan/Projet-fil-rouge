@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 export type User = {
   id: number;
@@ -10,38 +10,51 @@ export type User = {
 
 type AuthContextType = {
   isAuthenticated: boolean;
-  login: (user: User) => void;
+  login: (user: User, token: string) => void;
   logout: () => void;
   user: User | null;
+  token: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('mns_auth') === 'true';
+    return localStorage.getItem('mns_token') !== null;
   });
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('mns_user');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      localStorage.removeItem('mns_user');
+      return null;
+    }
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('mns_token');
   });
 
-  const login = (userData: User) => {
+  const login = useCallback((userData: User, jwtToken: string) => {
     setIsAuthenticated(true);
     setUser(userData);
-    localStorage.setItem('mns_auth', 'true');
+    setToken(jwtToken);
+    localStorage.setItem('mns_token', jwtToken);
     localStorage.setItem('mns_user', JSON.stringify(userData));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsAuthenticated(false);
     setUser(null);
-    localStorage.removeItem('mns_auth');
+    setToken(null);
+    localStorage.removeItem('mns_token');
     localStorage.removeItem('mns_user');
-  };
+    localStorage.removeItem('mns_auth');
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, user }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user, token }}>
       {children}
     </AuthContext.Provider>
   );

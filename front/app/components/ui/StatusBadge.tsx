@@ -5,6 +5,7 @@ export function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'Justifiée':
     case 'Validé':
+    case 'Complet':
       return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-50 text-green-700 border border-green-200"><CheckCircle2 size={12}/> {status}</span>;
     case 'En attente':
       return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-orange-50 text-[#FF6600] border border-orange-200"><AlertTriangle size={12}/> {status}</span>;

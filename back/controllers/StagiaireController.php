@@ -8,8 +8,17 @@ class StagiaireController
     {
         $pdo = getDbConnection();
         $stmt = $pdo->query('
-            SELECT s.*
+            SELECT s.id_stagiaire, s.nom, s.prenom, s.email, s.telephone, s.date_inscription,
+                   f.nom_formation,
+                   d.statut     AS dossier_statut,
+                   d.id_dossier AS dossier_id,
+                   d.id_formation
             FROM stagiaire s
+            LEFT JOIN dossier d ON d.id_dossier = (
+                SELECT id_dossier FROM dossier WHERE id_stagiaire = s.id_stagiaire
+                ORDER BY id_dossier DESC LIMIT 1
+            )
+            LEFT JOIN formation f ON d.id_formation = f.id_formation
             ORDER BY s.id_stagiaire DESC
         ');
         jsonResponse($stmt->fetchAll());
@@ -18,7 +27,22 @@ class StagiaireController
     public function show(array $params): void
     {
         $pdo = getDbConnection();
-        $stmt = $pdo->prepare('SELECT * FROM stagiaire WHERE id_stagiaire = :id');
+        $stmt = $pdo->prepare('
+            SELECT s.id_stagiaire, s.nom, s.prenom, s.email, s.telephone, s.date_inscription,
+                   f.nom_formation,
+                   d.statut     AS dossier_statut,
+                   d.id_dossier AS dossier_id,
+                   d.id_formation,
+                   (SELECT COUNT(*) FROM absence WHERE id_stagiaire = s.id_stagiaire) AS nb_absences,
+                   (SELECT COUNT(*) FROM retard  WHERE id_stagiaire = s.id_stagiaire) AS nb_retards
+            FROM stagiaire s
+            LEFT JOIN dossier d ON d.id_dossier = (
+                SELECT id_dossier FROM dossier WHERE id_stagiaire = s.id_stagiaire
+                ORDER BY id_dossier DESC LIMIT 1
+            )
+            LEFT JOIN formation f ON d.id_formation = f.id_formation
+            WHERE s.id_stagiaire = :id
+        ');
         $stmt->execute(['id' => $params['id']]);
         $stagiaire = $stmt->fetch();
 
